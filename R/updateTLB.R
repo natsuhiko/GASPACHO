@@ -34,7 +34,7 @@ updateTLB = function(
 }
 
 
-getELBOrho = function(Yt, YMat, Data, Param, Xi1, Ta1, rho1){
+getTLBrho = function(Yt, YMat, Data, Param, Xi1, Ta1, rho1){
     if(sum(unlist(rho1)>2000,na.rm=T)>1){return(-10^10)}
     M = Data$MatrixDims$M
     J = Data$MatrixDims$J

@@ -207,7 +207,7 @@ function(Yt, X, Fixed=NULL, ccat=NULL, delta0=NULL, sigma0=NULL, zeta0=NULL, ome
             hist(Param$omega2)
         
         tlb = updateTLB(YMat,Data,Param,F)
-        cat("ELBO=");print(tlb)
+        cat("TLB=");print(tlb)
         if(is.na(tlb)){break}
         tlb.all=c(tlb.all,tlb)
         png("tlb.png",width=3000,height=1000,res=150);par(mfcol=c(1,3));plot(tlb.all);plot(rev(rev(tlb.all)[1:100]));plot(rev(rev(tlb.all)[1:20]));dev.off()

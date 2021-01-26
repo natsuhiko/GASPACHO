@@ -133,9 +133,9 @@ Verbose=0){
     ss = ss2
     
     tLD = dbind(Param$LD, backsolve((chol(K)),diag(sum(M)))*sqrt(Theta))
-    pelbonow = sum(c(- logDet(diag(K2+sum(M))+t(tLD)%*%(t(tZ/omega2)%*%tZ)%*%tLD), + sum(diag(Solve(Phiinv,G%*%t(t(D)-E%*%tA)/J))),
+    ptlbcurrent = sum(c(- logDet(diag(K2+sum(M))+t(tLD)%*%(t(tZ/omega2)%*%tZ)%*%tLD), + sum(diag(Solve(Phiinv,G%*%t(t(D)-E%*%tA)/J))),
                 + sum(t(Knm/omega2)*Solve(K/Theta,t(Knm))), - sum((Xi[[2]]-Param$PriorXi2$mu)^2/Param$PriorXi2$var)/J - sum(Ta[[2]]^2)/J )) #- sum(1/omega2)*theta 
-    pelbo0=pelbo1=-(10^10)
+    ptlb0=ptlb1=-(10^10)
     rho0 = rho1 = rho
     Xi0  = Xi1  = Xi
     Ta0  = Ta1  = Ta
@@ -146,13 +146,13 @@ Verbose=0){
             Xi1  = list(Xi[[1]]           -  ss[[1]][2:(1+N)]/2^r,        Xi[[2]]           - ss[[2]][2:(1+N),]/2^r)
             Ta1  = list(Ta[[1]]           -  ss[[1]][(N+2):(1+N+M[1])]/2^r, Ta[[2]]           - ss[[2]][(N+2):(1+N+M[2]),]/2^r)
             if(Verbose>1){cat("rho1=");print(unlist(rho1))}
-            pelbo1 = getELBOrho(Yt, YMat, Data, Param, Xi1, Ta1, rho1)
-            if(Verbose>1){print(c(as.integer(r),pelbo0,pelbo1))}
-            if(is.na(pelbo1)){break}
-            if(pelbo0>pelbo1 && pelbonow>pelbo1*1.0000001){
+            ptlb1 = getTLBrho(Yt, YMat, Data, Param, Xi1, Ta1, rho1)
+            if(Verbose>1){print(c(as.integer(r),ptlb0,ptlb1))}
+            if(is.na(ptlb1)){break}
+            if(ptlb0>ptlb1 && ptlbcurrent>ptlb1*1.0000001){
                 break
             }else{
-                pelbo0=pelbo1
+                ptlb0=ptlb1
                 rho0 = rho1
                 Xi0  = Xi1
                 Ta0  = Ta1
@@ -176,10 +176,10 @@ Verbose=0){
                 }
             }
             if(Verbose>1){cat("rho1=");print(unlist(rho1))}
-            pelbo1 = getELBOrho(Yt, YMat, Data, Param, Xi1, Ta1, rho1)
-            if(Verbose>1){print(c(as.integer(r),pelbo0,pelbo1))}
-            if(is.na(pelbo1)){break}
-            if(pelbonow<pelbo1*1.0000001){
+            ptlb1 = getTLBrho(Yt, YMat, Data, Param, Xi1, Ta1, rho1)
+            if(Verbose>1){print(c(as.integer(r),ptlb0,ptlb1))}
+            if(is.na(ptlb1)){break}
+            if(ptlbcurrent<ptlb1*1.0000001){
                 rho0 = rho1
                 Xi0  = Xi1
                 Ta0  = Ta1
