@@ -75,10 +75,10 @@ Verbose=0){
     }
     
     tLD = dbind(Param$LD, backsolve((chol(K)),diag(M))*sqrt(theta))
-    pelbonow = c(- logDet(diag(K2+M)+t(tLD)%*%(t(tZ/omega2)%*%tZ)%*%tLD), + sum(diag(Solve(Phiinv,G%*%t(t(D)-E%*%tA)/J))), + sum(t(Knm/omega2)*Solve(K,t(Knm)))*theta, - sum(1/omega2)*theta - sum(Xi[[2]]^2)/J - sum(Ta[[2]]^2)/J )
-    print(pelbonow)
-    pelbonow=sum(pelbonow)
-    pelbo0=pelbo1=-(10^10)
+    ptlbnow = c(- logDet(diag(K2+M)+t(tLD)%*%(t(tZ/omega2)%*%tZ)%*%tLD), + sum(diag(Solve(Phiinv,G%*%t(t(D)-E%*%tA)/J))), + sum(t(Knm/omega2)*Solve(K,t(Knm)))*theta, - sum(1/omega2)*theta - sum(Xi[[2]]^2)/J - sum(Ta[[2]]^2)/J )
+    print(ptlbnow)
+    ptlbnow=sum(ptlbnow)
+    ptlb0=ptlb1=-(10^10)
     rho0 = rho
     Xi0  = Xi
     if(Verbose){cat("ss=");print(ss[1,])}
@@ -86,13 +86,13 @@ Verbose=0){
         rho1 = list(exp(log(rho[[1]]) - (c(ss[1,])/2.)/2^r), rho[[2]])
         Xi1  = list((Xi[[1]] - ss[2:(N+1),]/2^r)%%pi, Xi[[2]])
         if(Verbose>1){cat("rho1=");print(rho1[[1]]);}
-        pelbo1 = getELBOrho(Yt, YMat, Data, Param, Xi1, Ta, rho1)
-        if(Verbose>1){print(c(as.integer(r),pelbo0,pelbo1))}
-        if(is.na(pelbo1)){break}
-        if(pelbo0>pelbo1 && pelbonow>pelbo1*1.0000001){
+        ptlb1 = getELBOrho(Yt, YMat, Data, Param, Xi1, Ta, rho1)
+        if(Verbose>1){print(c(as.integer(r),ptlb0,ptlb1))}
+        if(is.na(ptlb1)){break}
+        if(ptlb0>ptlb1 && ptlbnow>ptlb1*1.0000001){
             break
         }else{
-            pelbo0=pelbo1
+            ptlb0=ptlb1
             rho0 = rho1
             Xi0  = Xi1
         }

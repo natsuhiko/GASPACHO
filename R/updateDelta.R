@@ -96,7 +96,7 @@ DEBUG=F, BFGS=T, Verbose=0){
     RKinv = backsolve((chol(K)),diag(sum(M))) # Kinv = RKinv%*%LKinv & K=L%*%R => I = LKinv%*% K %*%RKinv !!!!!!!!!
     tLD = dbind(Param$LD, RKinv*sqrt(Theta))
     ZOinvZ = t(tZ/omega2)%*%tZ
-    pelbo0 = - logDet(diag(K2+sum(M))+t(tLD)%*%(ZOinvZ)%*%tLD) + sum(diag(Solve(Phiinv,G))) + sum(a*theta) + sum((-iga-1)*log(c(delta^2,theta))-igb/c(delta^2,theta))/J
+    ptlb0 = - logDet(diag(K2+sum(M))+t(tLD)%*%(ZOinvZ)%*%tLD) + sum(diag(Solve(Phiinv,G))) + sum(a*theta) + sum((-iga-1)*log(c(delta^2,theta))-igb/c(delta^2,theta))/J
     if(Verbose>1){cat("ss=");print(c(ss))}
     for(r in c(0:10,20,25)){
         ss1 = ss/2^r
@@ -115,12 +115,12 @@ DEBUG=F, BFGS=T, Verbose=0){
             Phiinv = tDinv+t(tZ/omega2)%*%tZ
             tLD = dbind(LD, RKinv*sqrt(Theta1))
         
-            pelbo1 = - logDet(diag(K2+sum(M))+t(tLD)%*%(ZOinvZ)%*%tLD) + sum(diag(Solve(Phiinv,G))) + sum(a*theta1) + sum((-iga-1)*log(deltatheta^2)-igb/deltatheta^2)/J
+            ptlb1 = - logDet(diag(K2+sum(M))+t(tLD)%*%(ZOinvZ)%*%tLD) + sum(diag(Solve(Phiinv,G))) + sum(a*theta1) + sum((-iga-1)*log(deltatheta^2)-igb/deltatheta^2)/J
         }else{
-            pelbo1 = NA
+            ptlb1 = NA
         }
-        if(Verbose>1){print(c(as.integer(r),pelbo0,pelbo1))}
-        if(!is.na(pelbo1)){if(sign(pelbo1)*abs(pelbo1*1.0000001)>pelbo0){break}}
+        if(Verbose>1){print(c(as.integer(r),ptlb0,ptlb1))}
+        if(!is.na(ptlb1)){if(sign(ptlb1)*abs(ptlb1*1.0000001)>ptlb0){break}}
     }
     
     if(Verbose>0){

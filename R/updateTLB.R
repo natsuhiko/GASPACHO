@@ -1,10 +1,10 @@
-updateTELBO = function(
+updateTLB = function(
     YMat,
     Data,
     Param,
     DEBUG=F, Verbose=0){
     
-    if(Verbose>0)print("updateTELBO")
+    if(Verbose>0)print("updateTLB")
     
     N = Data$MatrixDims$N
     M = Data$MatrixDims$M
@@ -27,10 +27,10 @@ updateTELBO = function(
     LD = Param[["LD"]]
     LtD= dbind(LD,sqrt(Theta)*(backsolve(RK,diag(sum(M)))))
     
-    telbo = c(-N/2*sum(log(sigma2)), - J/2*sum(log(omega2)), - J/2*logDet(diag(K2+sum(M)) + t(LtD)%*%(t(tZ/omega2)%*%tZ)%*%LtD),
+    tlb = c(-N/2*sum(log(sigma2)), - J/2*sum(log(omega2)), - J/2*logDet(diag(K2+sum(M)) + t(LtD)%*%(t(tZ/omega2)%*%tZ)%*%LtD),
         - J/2*sum(theta * sum(1/omega2)) + J/2*sum( ((Knm*t(KinvKmn))%*%Theta)/omega2 ), # titsias
         - sum((Param$Xi[[2]]-Param$PriorXi2$mu)^2/Param$PriorXi2$var)/2-sum(Param$Ta[[2]]^2)/2)
-    sum(telbo)
+    sum(tlb)
 }
 
 
@@ -56,12 +56,12 @@ getELBOrho = function(Yt, YMat, Data, Param, Xi1, Ta1, rho1){
     E = t(tZ/omega2)%*%tW
     G = (t(D)-E%*%tA)%*%(t(t(D)-E%*%tA)/sigma2)/J
     
-    elbo = - logDet(diag(K2+sum(M))+t(tLD)%*%(t(tZ/omega2)%*%tZ)%*%tLD)
-    elbo = elbo + sum(diag(Solve(Phiinv,G)))
-    elbo = elbo + sum(t(newK$Knm/omega2)*Solve(newK$K/Theta,t(newK$Knm))) # - sum(1/omega2)*Param$theta
-    elbo = elbo - sum((Xi1[[2]]-Param$PriorXi2$mu)^2/Param$PriorXi2$var)/J - sum(Ta1[[2]]^2)/J
+    tlb = - logDet(diag(K2+sum(M))+t(tLD)%*%(t(tZ/omega2)%*%tZ)%*%tLD)
+    tlb = tlb + sum(diag(Solve(Phiinv,G)))
+    tlb = tlb + sum(t(newK$Knm/omega2)*Solve(newK$K/Theta,t(newK$Knm))) # - sum(1/omega2)*Param$theta
+    tlb = tlb - sum((Xi1[[2]]-Param$PriorXi2$mu)^2/Param$PriorXi2$var)/J - sum(Ta1[[2]]^2)/J
     
-    elbo
+    tlb
 }
 
 

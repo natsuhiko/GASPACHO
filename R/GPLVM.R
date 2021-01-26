@@ -151,8 +151,8 @@ function(Yt, X, Fixed=NULL, ccat=NULL, delta0=NULL, sigma0=NULL, zeta0=NULL, ome
     #    ITERATION   #
     ##################
     print("Iteration starts")
-    elbo0 = updateTELBO(YMat,Data,Param,F)
-    elbo.all=NULL
+    tlb0 = updateTLB(YMat,Data,Param,F)
+    tlb.all=NULL
     for(itr in 1:ITRMAX){
         cat(c(paste("[",itr,"]",sep=""),""),sep="\n");
         
@@ -205,11 +205,11 @@ function(Yt, X, Fixed=NULL, ccat=NULL, delta0=NULL, sigma0=NULL, zeta0=NULL, ome
             plot(omega0,Param$omega2);abline(0,1)
             hist(Param$omega2)
         
-        elbo = updateTELBO(YMat,Data,Param,F)
-        cat("ELBO=");print(elbo)
-        if(is.na(elbo)){break}
-        elbo.all=c(elbo.all,elbo)
-        png("elbo.png",width=3000,height=1000,res=150);par(mfcol=c(1,3));plot(elbo.all);plot(rev(rev(elbo.all)[1:100]));plot(rev(rev(elbo.all)[1:20]));dev.off()
+        tlb = updateTLB(YMat,Data,Param,F)
+        cat("ELBO=");print(tlb)
+        if(is.na(tlb)){break}
+        tlb.all=c(tlb.all,tlb)
+        png("tlb.png",width=3000,height=1000,res=150);par(mfcol=c(1,3));plot(tlb.all);plot(rev(rev(tlb.all)[1:100]));plot(rev(rev(tlb.all)[1:20]));dev.off()
     }
     list(Data=Data,Param=Param)
 }
