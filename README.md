@@ -3,7 +3,7 @@
 GAuSsian Processes for Association mapping leveraging Cell HeterOgeneity.
 
 ## Fitting GP-LVM
-The example log normalised CPM (count per million) data is available [here](https://drive.google.com/file/d/1voKdmSMBHW_UET2TKdezMX4szREhEMgN/view?usp=sharing).
+The example log normalised CPM (count per million) data is available [here](https://drive.google.com/file/d/1voKdmSMBHW_UET2TKdezMX4szREhEMgN/view?usp=sharing). Please dowonload it and put in the `Data` directory.
 
 	% R
 	> metadata = readRDS("Data/metadata.RDS")
