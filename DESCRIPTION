@@ -1,0 +1,22 @@
+Package: GASPACHO
+Maintainer: Natsuhiko Kumasaka <nk5@sanger.ac.uk>
+Author: nk5
+Version: 0.1
+License: GPL-3
+Title: GAuSsian Processes for Association mapping leveraging Cell HeterOgeneity
+Description: Mapping eQTLs in single cell resolutions
+Suggests:
+Collate:
+    'GPLVM.R'
+    'GPMix.R'
+    'Util.R'
+    'getBF.R'
+    'getBF_local.R'
+    'getResid.R'
+    'updateAlpha.R'
+    'updateDelta.R'
+    'updateKernel.R'
+    'updateOmega.R'
+    'updateRhoXi_LBFGS.R'
+    'updateSigma.R'
+    'updateTLB.R'
