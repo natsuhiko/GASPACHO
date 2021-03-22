@@ -85,6 +85,7 @@ function(Yt, X, Fixed=NULL, ccat=NULL, delta0=NULL, sigma0=NULL, zeta0=NULL, ome
                 #Data$NGPs=1
     Param = list(Xi=Xi0,Ta=Ta0)
     
+    Param = c(Param, list(UpdateKernelParams=rep(7,length(Ta0))))
     
     if(!is.null(Fixed)){if(is.null(Alpha0)){Param = c(Param, list(Alpha=array(0,c(ncol(Wfix),nrow(Yt)))))}else{Param=c(Param,list(Alpha=Alpha0))}}else{ Param = c(Param, list(Alpha = array(0,c(0,Data$MatrixDims$J))))   }
     if(is.null(zeta0)){ Param = c(Param, list(zeta=rep(0,ncol(Z))))                  }else{ Param = c(Param, list(zeta = zeta0)) }
@@ -108,17 +109,24 @@ function(Yt, X, Fixed=NULL, ccat=NULL, delta0=NULL, sigma0=NULL, zeta0=NULL, ome
     #load("../Param_init_cc_based_on_PCs.Rbin")
     #load("Param_init_Ta_from_Xi.Rbin")
     #print("Param_init_Ta_from_Xi.Rbin")
-    
+    #load("Param_init_DE_result.Rbin")
+    #print("Param_init_DE_result.Rbin")
+    #load("Param400.Rbin")
+
     #load("Param1260.Rbin")
     #load("PriorXi2.Rbin")
     #Param=c(Param, PriorXi2=list(PriorXi2))
-    Param=c(Param, PriorXi2=list(mu=array(0,c(Data$MatrixDims$N,Data$MatrixDims$Q[2])), var=array(1,c(Data$MatrixDims$N,Data$MatrixDims$Q[2]))))
+    #print(c(Data$MatrixDims$N,Data$MatrixDims$Q[2]))
+    PriorXi2=list(mu=array(0,c(Data$MatrixDims$N,Data$MatrixDims$Q[2])), var=array(1,c(Data$MatrixDims$N,Data$MatrixDims$Q[2])))
+    Param=c(Param, PriorXi2=list(PriorXi2))
+    #print(names(Param))
+    #print(dim(Param$PriorXi2$var))
     #print("Param1260 with PriorXi2")
     #Param$delta=c(Param$delta,0.3)
     #Param$zeta = c(Param$zeta,0,0)
     
-    Param=c(Param, updateKernel(Data, Param))
     
+    Param=c(Param, updateKernel(Data, Param))
     Param=c(Param, initDelta(Data, Param))
         #,list(Psiinv = Param$Kinv/Param$theta + t(Param$KnmKinv/Param$omega2)%*%Param$KnmKinv))
     
@@ -157,27 +165,25 @@ function(Yt, X, Fixed=NULL, ccat=NULL, delta0=NULL, sigma0=NULL, zeta0=NULL, ome
     for(itr in 1:ITRMAX){
         cat(c(paste("[",itr,"]",sep=""),""),sep="\n");
         
-        # parameter storing
-        if(itr%%20==0){
+        # intermediate parameter saving off
+        if(0){if(itr%%20==0){
             save(Param,file=paste("Param",itr,".Rbin",sep=""))
-            if(1){
-                #png("pairs.png",width=2000,height=2000,res=150);pairs(rbind(Param$Xi,Param$Ta),col=rep(1:2,c(22188,50)));dev.off()
-                hoge=Param$Xi
-                save(hoge,file="hoge.Rbin")
-            }
-        }
+            #png("pairs.png",width=2000,height=2000,res=150);pairs(rbind(Param$Xi,Param$Ta),col=rep(1:2,c(22188,50)));dev.off()
+            #hoge=Param$Xi
+            #save(hoge,file="hoge.Rbin")
+        }}
         
         # Rho & Xi
         Param[c("rho","Xi","Ta","ValRhoXi","GradRhoXi")] = updateRhoXi_LBFGS(Yt, YMat, Data, Param, F, Verbose=Verbose)
-        #Param[c("rho","Xi","Ta","ValRhoXi","GradRhoXi")] = updatePeriodic(Yt, YMat, Data, Param, F, Verbose=Verbose)
         Param[c("K","Knm")] = updateKernel(Data,Param)
         YMat[["YtOinvKnm"]] = as.matrix(Yt%*%(Param$Knm/Param$omega2))
         tDinv = dbind(Param$Dinv,Param$K/rep(Param$theta,Data$MatrixDims$M))
         tZ = cbind(Data$Z,Param$Knm)
         Param[["Phiinv"]] = tDinv + t(tZ/Param$omega2)%*%tZ
-        hist(Param$Xi[[1]]%%pi,breaks=100);abline(v=Param$Ta[[1]],col=2:4)
+        #hist(Param$Xi[[1]]%%pi,breaks=100);abline(v=Param$Ta[[1]],col=2:4)
         #plot(Param$Ta[[3]],xlim=c(0,17),ylim=c(0,25))
         
+        if(1){
         # Delta
         Param[c("zeta", "delta", "LD", "Delta", "Linv", "Dinv", "Phiinv", "theta", "ssdelta", "graddelta", "Hinvdelta")] = updateDelta(YMat, Data, Param, F, Verbose=Verbose)
         
@@ -195,22 +201,24 @@ function(Yt, X, Fixed=NULL, ccat=NULL, delta0=NULL, sigma0=NULL, zeta0=NULL, ome
             tZ = cbind(Data$Z,Param$Knm)
             Param[["Phiinv"]] = tDinv + t(tZ/Param$omega2)%*%tZ
         }
+        
         # Sigma
         Param["sigma2"]=updateSigma(YMat, Data, Param,F,Yt, Verbose=Verbose)
         YMat[c("ASinvYt","BSinvYt","USinvYt","OneSinvYt")] = updateYMatSigma(Yt, Data, Param)
+        }
             
             
             
-            
-            plot(sigma0, Param$sigma2);abline(0,1)
-            plot(omega0,Param$omega2);abline(0,1)
-            hist(Param$omega2)
+            #plot(sigma0, Param$sigma2);abline(0,1)
+            #plot(omega0,Param$omega2);abline(0,1)
+            #hist(Param$omega2)
         
+        # Titsias lower bound
         tlb = updateTLB(YMat,Data,Param,F)
         cat("TLB=");print(tlb)
         if(is.na(tlb)){break}
         tlb.all=c(tlb.all,tlb)
-        png("tlb.png",width=3000,height=1000,res=150);par(mfcol=c(1,3));plot(tlb.all);plot(rev(rev(tlb.all)[1:100]));plot(rev(rev(tlb.all)[1:20]));dev.off()
+        #png("tlb.png",width=3000,height=1000,res=150);par(mfcol=c(1,3));plot(tlb.all);plot(rev(rev(tlb.all)[1:100]));plot(rev(rev(tlb.all)[1:20]));dev.off()
     }
     list(Data=Data,Param=Param)
 }

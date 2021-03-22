@@ -19,8 +19,10 @@ Verbose=0){
     
     flagZK = rep(0:1,c(K2,sum(M)))
     
+    
     Knm = Param[["Knm"]]
     K = Param[["K"]]
+    
     Z = Data[["Z"]]
     W = Data[["W"]]
     zeta = Param[["zeta"]]
@@ -77,8 +79,11 @@ Verbose=0){
             
             gradTa = c(gradTa, list(matrix(-colSums(tC*dqKX) + rowSums(2*tAA*dqKT)/2, M)))
         }else{ # SE
-            gradXi = c(gradXi, list((- rowSums(tC)*Xi[[i]] + tC%*%Ta[[i]])%*%Diag(1/rho[[i]]^2) - (Xi[[i]]-Param$PriorXi2$mu)/Param$PriorXi2$var/J))
-            
+            if(i==2){
+                gradXi = c(gradXi, list((- rowSums(tC)*Xi[[i]] + tC%*%Ta[[i]])%*%Diag(1/rho[[i]]^2) - (Xi[[i]]-Param$PriorXi2$mu)/Param$PriorXi2$var/J))
+            }else{
+                gradXi = c(gradXi, list((- rowSums(tC)*Xi[[i]] + tC%*%Ta[[i]])%*%Diag(1/rho[[i]]^2) - Xi[[i]]/J))
+            }
             gradRho = c(gradRho, rep(0,Q[i]))
             for(q in seq(Q[i])){
                 dqK   = outer(Ta[[i]][,q],Ta[[i]][,q],"-")^2/rho[[i]][q]^2/2. # K  *
@@ -102,6 +107,9 @@ Verbose=0){
         }else if(UKP[i]==5){
             ValNew  = c(ValNew,  c(rbind(2*log(rho[[i]]), Ta[[i]])))
             GradNew = c(GradNew, c(rbind(gradRho[[i]],    gradTa[[i]])))
+        }else if(UKP[i]==4){
+            ValNew  = c(ValNew,  c(2*log(rho[[i]])))
+            GradNew = c(GradNew, c(gradRho[[i]]))
         }else if(UKP[i]==1){
             ValNew  = c(ValNew,  c(rbind(Ta[[i]])))
             GradNew = c(GradNew, c(rbind(gradTa[[i]])))
@@ -113,11 +121,13 @@ Verbose=0){
     if(is.null(Param$GradRhoXi)){
         print("init LBFGS")
         ss = -c(GradNew)/5000
+        print(range(ss))
     }else{
         ValNew = cbind(ValNew,Param$ValRhoXi)
         GradNew = cbind(GradNew,Param$GradRhoXi)
         ss = -LBFGS(ValNew, GradNew)
     }
+    if(sum(is.na(ss))){stop("ss became NaN")}
     ss2 = list()
     for(i in 1:length(Ta)){
         if(UKP[i]==7){
@@ -126,20 +136,32 @@ Verbose=0){
             ss2 = c(ss2, list(matrix(ss[(strend[i]+1):strend[i+1]],1+N)))
         }else if(UKP[i]==5){
             ss2 = c(ss2, list(matrix(ss[(strend[i]+1):strend[i+1]],1+M)))
+        }else if(UKP[i]==4){
+            ss2 = c(ss2, list(matrix(ss[(strend[i]+1):strend[i+1]],1)))
         }else if(UKP[i]==1){
             ss2 = c(ss2, list(matrix(ss[(strend[i]+1):strend[i+1]],M)))
+        }else if(UKP[i]==0){
+            ss2 = c(ss2, list(NA))
         }
     }
     ss = ss2
     
+    
     tLD = dbind(Param$LD, backsolve((chol(K)),diag(sum(M)))*sqrt(Theta))
-    ptlbcurrent = sum(c(- logDet(diag(K2+sum(M))+t(tLD)%*%(t(tZ/omega2)%*%tZ)%*%tLD), + sum(diag(Solve(Phiinv,G%*%t(t(D)-E%*%tA)/J))),
-                + sum(t(Knm/omega2)*Solve(K/Theta,t(Knm))), - sum((Xi[[2]]-Param$PriorXi2$mu)^2/Param$PriorXi2$var)/J - sum(Ta[[2]]^2)/J )) #- sum(1/omega2)*theta 
+    ptlbcurrent =  c(- logDet(diag(K2+sum(M))+t(tLD)%*%(t(tZ/omega2)%*%tZ)%*%tLD),
+                    sum(diag(Solve(Phiinv,G%*%t(t(D)-E%*%tA)/J))),
+                    sum(t(Knm/omega2)*Solve(K/Theta,t(Knm))),
+                    - sum((Xi[[2]]-Param$PriorXi2$mu)^2/Param$PriorXi2$var)/J - sum(Ta[[2]]^2)/J)   #- sum(1/omega2)*theta
+                    #print(ptlbcurrent)
+    ptlbcurrent = sum(ptlbcurrent)
+                #if(is.null(Param$GradRhoXi)){ptlbcurrent=ptlbcurrent-10000}
+                #ptlbcurrent = getTLBrho(Yt, YMat, Data, Param, Xi, Ta, rho)
     ptlb0=ptlb1=-(10^10)
     rho0 = rho1 = rho
     Xi0  = Xi1  = Xi
     Ta0  = Ta1  = Ta
-    if(Verbose>1){cat("ss=");print(c(ss[[1]][1,],ss[[2]][1,]))}
+    #if(Verbose>1){cat("ss=");print(c(ss[[1]][1,],ss[[2]][1,],ss[[3]][1,]))}
+    #if(Verbose>1){cat("ss=");print(c(ss[[3]][1,]))}
     if(0){ # reverse
         for(r in c(50,20,10:0,-1)){
             rho1 = list(exp(log(rho[[1]]) - (ss[[1]][1]/2.)/2^r),         exp(log(rho[[2]]) - (ss[[2]][1,]/2.)/2^r))
@@ -171,20 +193,22 @@ Verbose=0){
                 }else if(UKP[i]==5){
                     rho1[[i]] = exp(log(rho[[i]]) - (ss[[i]][1,]/2.)/2^r)
                     Ta1[[i]]  = Ta[[i]]           -  ss[[i]][(2):(1+M),]/2^r
+                }else if(UKP[i]==4){
+                    rho1[[i]] = exp(log(rho[[i]]) - (ss[[i]][1,]/2.)/2^r)
                 }else if(UKP[i]==1){
                     Ta1[[i]]  = Ta[[i]]           -  ss[[i]][(1):(M),]/2^r
                 }
             }
             if(Verbose>1){cat("rho1=");print(unlist(rho1))}
-            ptlb1 = getTLBrho(Yt, YMat, Data, Param, Xi1, Ta1, rho1)
-            if(Verbose>1){print(c(as.integer(r),ptlb0,ptlb1))}
-            if(is.na(ptlb1)){break}
+            ptlb1 = try(getTLBrho(Yt, YMat, Data, Param, Xi1, Ta1, rho1))
+            if(Verbose>1){print(c(as.integer(r),ptlbcurrent,ptlb1))}
+            if(!is.character(ptlb1)){if(is.na(ptlb1)){break}
             if(ptlbcurrent<ptlb1*1.0000001){
                 rho0 = rho1
                 Xi0  = Xi1
                 Ta0  = Ta1
                 break
-            }
+            }}
         }
     }
     if(Verbose>0){cat("rho=");print(unlist(rho0))}

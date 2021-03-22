@@ -201,7 +201,7 @@ LF=10
     }
     
     Ks = updateKernelSE(gplvm$Param$Xi[[2]][,-c(1,3,5)],reduceDim1(gplvm$Param$Ta[[2]][,-c(1,3,5)]),gplvm$Param$rho[[2]][-c(1,3,5)]*rhoscale)
-    U = Ks$Knm
+    #U = Ks$Knm
     U = t(Solve(Ks$K,t(Ks$Knm)))
     Gk = apply(G, 2, scale)
     K2 = 1
@@ -230,29 +230,37 @@ LF=10
     for(i in 1:NL){
         Fk=cbind(Fk,c(t(ZtOinvGk[,((i-1)*K2+1):(i*K2)])%*%Solve(Phiinv,ZtOinvGk[,((i-1)*K2+1):(i*K2)])))
     }
-    if(LF>0){
-        DeltaG    = deltaG*dbind(theta*Solve(Ks$K),matrix(1,1))
-        DeltaGinv = dbind(Ks$K/theta,matrix(1,1)) / deltaG
+    bfs=NULL
+    for(deltaG in c(0.01,0.1,1,10)){
+        if(LF>0){
+            #DeltaG    = deltaG*dbind(theta*Solve(Ks$K),matrix(1,1))
+            #DeltaGinv = dbind(Ks$K/theta,matrix(1,1)) / deltaG
+            
+            DeltaG    = deltaG*dbind(theta*Ks$K,matrix(1,1))
+            DeltaGinv = dbind(Solve(Ks$K)/theta,matrix(1,1)) / deltaG
+        }else{
+            DeltaG = matrix(1,1,1)*deltaG
+            DeltaGinv = matrix(1,1,1)/deltaG
+        }
+        Hk = Ck - Fk + c(DeltaGinv)  # K2^2 x NL
+        Hkinv=NULL
+        for(i in 1:NL){Hkinv=cbind(Hkinv, c(Solve(matrix(Hk[,i],K2))))}
         
-        DeltaG    = deltaG*dbind(theta*Ks$K,matrix(1,1))
-        DeltaGinv = dbind(Solve(Ks$K)/theta,matrix(1,1)) / deltaG
-    }else{
-        DeltaG = matrix(1,1,1)*deltaG
-        DeltaGinv = matrix(1,1,1)/deltaG
+        
+        # new sigma2
+        N = length(y)
+        s2nul = (a-d)/N
+        s2new = (a-d-colSums(Hkinv*((ek-bk)%x%rep(1,K2))*(rep(1,K2)%x%(ek-bk))))/N
+        
+        # BF
+        #-N*log(s2nul)/2
+        bfs = cbind(bfs,
+            -N*log(s2new)/2 - apply(Hk, 2, function(Hk1){logDet(matrix(Hk1,K2))})/2 - logDet(DeltaG)/2 + N*log(s2nul)/2 +
+                sum(t(Ks$Knm/omega2)*Solve(Ks$K,t(Ks$Knm)))*theta*deltaG/2 - sum(1/omega2)*theta*deltaG/2
+            )
     }
-    Hk = Ck - Fk + c(DeltaGinv)  # K2^2 x NL
-    Hkinv=NULL
-    for(i in 1:NL){Hkinv=cbind(Hkinv, c(Solve(matrix(Hk[,i],K2))))}
-    
-    
-    # new sigma2
-    N = length(y)
-    s2nul = (a-d)/N
-    s2new = (a-d-colSums(Hkinv*((ek-bk)%x%rep(1,K2))*(rep(1,K2)%x%(ek-bk))))/N
-    
-    # BF
-    #-N*log(s2nul)/2
-    -N*log(s2new)/2 - apply(Hk, 2, function(Hk1){logDet(matrix(Hk1,K2))})/2 - logDet(DeltaG)/2 -(-N*log(s2nul)/2) + sum(t(Ks$Knm/omega2)*Solve(Ks$K,t(Ks$Knm)))*theta*deltaG/2 - sum(1/omega2)*theta*deltaG/2
+    mbfs=apply(bfs,1,max)
+    log(apply(exp(bfs-mbfs),1,mean,na.rm=T))+mbfs
 }
 
 

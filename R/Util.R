@@ -81,7 +81,7 @@ BFGS = function(H,S,Y,G,debug=F){
     list(H=Hnew, ss=BlockProduct(Hnew,G))
 }
 
-LBFGS=function(X, G){
+LBFGS_old=function(X, G){
     print(dim(X))
     print(dim(G))
     M = ncol(X)
@@ -96,6 +96,30 @@ LBFGS=function(X, G){
     gammak = sum(S[,1]*Y[,1])/sum(Y[,1]^2)
     z = gammak*q
     for(i in (M-1):1){
+        bi = sum(Y[,i]*z)/sum(S[,i]*Y[,i])
+        if(!is.na(a[i]+bi)){z = z + S[,i]*(a[i]-bi)}
+    }
+    -z
+}
+
+LBFGS=function(X, G){
+    print(dim(X))
+    print(dim(G))
+    M = ncol(X)
+    S = X[,1:(M-1),drop=F]-X[,2:M,drop=F]
+    Y = G[,1:(M-1),drop=F]-G[,2:M,drop=F]
+    q = G[,1]
+    a = rep(0, M-1)
+    flag = rep(T,M-1)
+    for(i in 1:(M-1)){
+        a[i] = sum(S[,i]*q)/sum(S[,i]*Y[,i])
+        if(!is.na(a[i])){q = q - a[i]*Y[,i]}else{flag[i]=F; print(i); print("ss too small")}
+    }
+    effi = rev(seq(M-1)[flag])
+    gammak = sum(S[,min(effi)]*Y[,min(effi)])/sum(Y[,min(effi)]^2)
+    print(gammak)
+    z = gammak*q
+    for(i in effi){
         bi = sum(Y[,i]*z)/sum(S[,i]*Y[,i])
         if(!is.na(a[i]+bi)){z = z + S[,i]*(a[i]-bi)}
     }
