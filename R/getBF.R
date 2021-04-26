@@ -23,7 +23,8 @@ Yt,
 gplvm,
 W0,
 B0=NULL,
-XB=NULL
+XB=NULL,
+ItrMax=100
 ){
     omega2 = gplvm$Param$omega2
     theta = gplvm$Param$theta
@@ -87,7 +88,7 @@ XB=NULL
         cat("dim(B0)=");print(dim(B0));print(dim(X))
     }
     #mvnprop = mvnMix2(tY%*%diag(1/sqrt(gplvm$Param$sigma2)), X, B0, gplvm$Param$omega2, tZ0, Dinv0, theta*Ks2$K, W0)
-    mvnprop = mvnMix2(t(t(tY)/sqrt(gplvm$Param$sigma2)), X, B0, gplvm$Param$omega2, tZ0, Dinv0, theta*Ks2$K, W0, itrmax=500)
+    mvnprop = mvnMix2(t(t(tY)/sqrt(gplvm$Param$sigma2)), X, B0, gplvm$Param$omega2, tZ0, Dinv0, theta*Ks2$K, W0, itrmax=ItrMax)
     
     list(cbind(bf1-bf0,emn(matrix(bf1-bf0,length(bf1)))), mvnprop)
 }

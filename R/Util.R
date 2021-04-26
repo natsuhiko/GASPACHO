@@ -161,7 +161,7 @@ dbind=function(...){
     A = array(0, apply(dims,2,sum))
     cdims = apply(rbind(c(0,0),dims),2,cumsum)
     for(i in 1:N){
-        A[(cdims[i,1]+1):cdims[i+1,1], (cdims[i,2]+1):cdims[i+1,2]]= lis[[i]]
+        if(length(lis[[i]])>0){ A[(cdims[i,1]+1):cdims[i+1,1], (cdims[i,2]+1):cdims[i+1,2]]= lis[[i]] }
     }
     A
 }
@@ -174,6 +174,7 @@ dbind0=function(a,b){
 }
 
 Solve = function(x,y=diag(nrow(x))){
+    if(length(x)==0){return(array(0,c(0,0)))}
 	r  = chol((x+t(x))/2)
     if(is.character(r)){
         return(y*NA)
@@ -518,7 +519,7 @@ mvnMix2 = function(Y, X, B, omega2, Z, Dinv, K, W, itrmax=100){
             XVinvX = XOinvX - t(ZkOinvX)%*%Solve(Phiinvk, ZkOinvX)
             XVinvY = XOinvY - t(ZkOinvX)%*%Solve(Phiinvk, ZkOinvY)
             
-            grad = cbind(grad,-sum(W[,k])*XVinvX%*%B[,k] + (XVinvY*W[,k])%*%t(XVinvY)%*%B[,k] - Solve(K,B[,k]))
+            grad = cbind(grad, -sum(W[,k])*XVinvX%*%B[,k] + (XVinvY*W[,k])%*%t(XVinvY)%*%B[,k] - Solve(K,B[,k]))
         }
         # L-BFGS
         if(is.null(Grad)){
@@ -570,6 +571,7 @@ mvnMix2 = function(Y, X, B, omega2, Z, Dinv, K, W, itrmax=100){
         if(itr>1)plot(lkhd_all[-1])
         
         # E step
+        Wold=W
         W = NULL
         penaltyAll = 0
         for(k in 1:KK){
@@ -581,7 +583,16 @@ mvnMix2 = function(Y, X, B, omega2, Z, Dinv, K, W, itrmax=100){
             
             # hessian for laplace approximation
             XVkinvX = t(X/omega2)%*%X - t(ZkOinvX)%*%Solve(Phiinvk, ZkOinvX)
-            penaltyk = -logDet(sum(t(XVkinvX*B[,k])*B[,k])*XVkinvX + (XVkinvX%*%B[,k])%*%t(XVkinvX%*%B[,k]))/2 + log(2*pi)/2*nrow(B)
+            Ik = sum(t(XVkinvX*B[,k])*B[,k])*XVkinvX + (XVkinvX%*%B[,k])%*%t(XVkinvX%*%B[,k])
+            Hk = sum(Wold[,k])*Ik + solve(K)
+            penaltyk = -logDet(Ik)/2 + log(2*pi)/2*nrow(B)
+            #penaltyk = -logDet(Ik+solve(K))/2 + log(2*pi)/2*nrow(B)
+            #penaltyk = -logDet(Ik+solve(K)/nrow(Wold))/2 + log(2*pi)/2*nrow(B)
+            #penaltyk = ( -logDet(sum(Wold[,k])*Ik+solve(K))/2 + log(2*pi)/2*nrow(B) )/sum(Wold[,k])
+            #Ik = sum(t(XVkinvX*B[,k])*B[,k])*XVkinvX + (XVkinvX%*%B[,k])%*%t(XVkinvX%*%B[,k])
+            #Hk = sum(Wold[,k])*Ik + solve(K)
+            #penaltyk = -sum(diag(Solve(Hk,Ik)))/2
+            #penaltyk = -logDet(Hk)/2 + log(2*pi)/2*nrow(B)
             #penaltyAll = penaltyAll + penaltyk
             W = cbind(W, -logDet(diag(nrow(Phiinvk))+Rk%*%t(Zk/omega2)%*%Zk%*%t(Rk))/2 - y2/2 + colSums(ZkOinvY*Solve(Phiinvk, ZkOinvY))/2 + penaltyk)
         }
@@ -605,8 +616,35 @@ mvnMix2 = function(Y, X, B, omega2, Z, Dinv, K, W, itrmax=100){
 
 
 
+Eigen_cblas = function(X, ndim=5){
+    dyn.load("dsyevx.dylib")
+    N=nrow(X)
+    
+    lwork=N*N
+    
+    res=.C("myeigen", as.double(X), as.integer(N), as.integer(ndim), eval=double(N), evec=double(N*ndim), double(N*N), integer(N*5), integer(N))
+    
+    res$eval=rev(res$eval[1:ndim])
+    res$evec=matrix(res$evec, N)[,ndim:1]
+    
+    res[c("eval","evec")]
+}
 
-
+Eigen = function(X, ndim=5){
+    library(reticulate)
+    eigh <- import('scipy')$linalg$eigh
+    
+    N=nrow(X)
+    
+    res = eigh(X, eigvals=c(as.integer(N-ndim), as.integer(N-1)))
+    
+    names(res) = c("eval","evec")
+    
+    res$eval=res$eval[ndim:1]
+    res$evec=res$evec[,ndim:1]
+    
+    res
+}
 
 
 

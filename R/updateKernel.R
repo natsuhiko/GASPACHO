@@ -26,7 +26,15 @@ getTa = function(Xi, M=50){
 }
 
 updateKernel=function(Data, Param){
-    updateKernelMultiplicative(Data, Param)
+    if(Data$Kernel=="SE"){
+        updateKernelMultiplicative(Data, Param)
+    }else{
+        updateKernelLinear(Data, Param)
+    }
+}
+
+updateKernelLinear=function(Data, Param){
+    list(K=diag(ncol(Param$Xi)), Knm=Param$Xi)
 }
 
 updateKernelMultiplicative=function(Data, Param){

@@ -3,6 +3,54 @@ updateTLB = function(
     Data,
     Param,
     DEBUG=F, Verbose=0){
+    if(Data$Kernel=="SE"){
+        updateTLBSE(YMat, Data, Param, DEBUG, Verbose)
+    }else{
+        updateTLBLinear(YMat, Data, Param, DEBUG, Verbose)
+    }
+}
+
+updateTLBLinear = function(
+YMat,
+Data,
+Param,
+DEBUG=F, Verbose=0){
+    
+    if(Verbose>0)print("updateTLB")
+    
+    N = Data$MatrixDims$N
+    M = Data$MatrixDims$M
+    Q = Data$MatrixDims$Q
+    J = Data$MatrixDims$J
+    K2= Data$MatrixDims$K2
+    
+    Knm = Param[["Knm"]]
+    K = Param[["K"]]
+
+    if(sum(Q)>0){ RK = chol(K) }
+    Z = Data[["Z"]]
+    
+    omega2 = Param[["omega2"]]
+    sigma2 = Param[["sigma2"]]
+    theta = Param[["theta"]]
+    Theta = rep(theta, Q)
+    tZ = cbind(Z,Knm)
+    
+    LD = Param[["LD"]]
+    if(sum(Q)>0){
+        LtD= dbind(LD,sqrt(Theta)*(backsolve(RK,diag(sum(M)))))
+    }else{
+        LtD = LD
+    }
+    tlb = c(-N/2*sum(log(sigma2)), - J/2*sum(log(omega2)), - J/2*logDet(diag(K2+sum(M)) + t(LtD)%*%(t(tZ/omega2)%*%tZ)%*%LtD))
+    sum(tlb)
+}
+
+updateTLBSE = function(
+    YMat,
+    Data,
+    Param,
+    DEBUG=F, Verbose=0){
     
     if(Verbose>0)print("updateTLB")
     

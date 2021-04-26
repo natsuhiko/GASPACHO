@@ -59,8 +59,10 @@ DEBUG=F, Verbose=0){
     hess = c(- 2*v^2*omega2 )
     
     # titsias
-    grad = grad +   c(sum(theta)-(Knm*t(KinvKmn))%*%Theta)/sqrt(omega2)^3
-    hess = hess - 3*c(sum(theta)-(Knm*t(KinvKmn))%*%Theta)/omega2^2
+    if(Data$Kernel!="Linear"){
+        grad = grad +   c(sum(theta)-(Knm*t(KinvKmn))%*%Theta)/sqrt(omega2)^3
+        hess = hess - 3*c(sum(theta)-(Knm*t(KinvKmn))%*%Theta)/omega2^2
+    }
     
     aig = 6; big=5
     grad = grad + (2*big-2*(1+aig)*omega2)/sqrt(omega2)^3/J

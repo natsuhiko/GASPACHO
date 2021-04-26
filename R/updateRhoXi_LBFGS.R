@@ -1,4 +1,50 @@
-updateRhoXi_LBFGS = function(
+updateRhoXiTa = function(
+Yt,
+YMat,
+Data,
+Param,
+DEBUG=F,
+Verbose=0){
+    if(Data$Kernel=="SE"){
+        updateRhoXiTaSE(Yt, YMat, Data, Param, DEBUG, Verbose)
+    }else{
+        updateXiLinear(Yt, YMat, Data, Param, DEBUG, Verbose)
+    }
+}
+
+updateXiLinear = function(
+Yt,
+YMat,
+Data,
+Param,
+DEBUG=F,
+Verbose=0){
+    J = Data$MatrixDims$J
+    Q = Data$MatrixDims$Q
+    
+    Z = Data[["Z"]]
+    W = Data[["W"]]
+    zeta = Param[["zeta"]]
+    
+    omega2 = Param[["omega2"]]
+    sigma2 = Param[["sigma2"]]
+    
+    tA = rbind(Param[["Alpha"]],1)
+    tW = cbind(W,Z%*%zeta)
+    
+    C = cbind(YMat$YtOinvW,YMat$YtOinvZ%*%zeta) # N x 1
+    
+    Sg = as.matrix(Yt%*%(t(Yt)/omega2)) - C%*%tA - t(tA)%*%t(C) + (t(tA)%*%(t(tW/omega2)%*%tW))%*%tA
+    Sg = t(Sg/sqrt(sigma2))/sqrt(sigma2)/J
+    
+    res = Eigen(Sg, Q)
+    Xi = ( as.matrix(t(t(res[[2]]/sqrt(sigma2))%*%Yt))-tW%*%(tA%*%(res[[2]]/sqrt(sigma2))) ) %*% diag(sqrt(1-1/res[[1]])) / sqrt(J)
+    
+    list(rho=NA, Xi=Xi, Ta=NA, ValRhoXi = NA, GradRhoXi = NA)
+}
+
+
+updateRhoXiTaSE = function(
 Yt,
 YMat,
 Data,

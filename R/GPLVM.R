@@ -1,5 +1,5 @@
 GPLVM <-
-function(Yt, X, Fixed=NULL, ccat=NULL, delta0=NULL, sigma0=NULL, zeta0=NULL, omega0=NULL, Beta0=NULL, Alpha0=NULL, LF=0, ITRMAX=20, forced=T, Intercept=T, Xi0, Ta0, rho0=NULL, Nu0=NULL, theta0=NULL, DEBUG=T, Kernel="SE", Verbose=2){
+function(Yt, X, Fixed=NULL, ccat=NULL, delta0=NULL, sigma0=NULL, zeta0=NULL, omega0=NULL, Beta0=NULL, Alpha0=NULL, Q0=0, ITRMAX=20, forced=T, Intercept=T, Xi0, Ta0, rho0=NULL, Nu0=NULL, theta0=NULL, DEBUG=T, Kernel="SE", Verbose=2, Plot=F){
 
     library(Matrix)
 	if(nrow(X)!=ncol(Yt)){warning("Input TPM matrix Y is not compatible with covariate matrix X."); return()}
@@ -45,8 +45,6 @@ function(Yt, X, Fixed=NULL, ccat=NULL, delta0=NULL, sigma0=NULL, zeta0=NULL, ome
 			}
 		}
 	}
-	if(LF>0){nh=c(nh, LatentFactor=LF);}
-    Z = cbind(Z, array(0,c(nrow(Z),LF)))
 	
     K = length(nh)
 	H = diag(K)[rep(seq(K),nh),]
@@ -61,8 +59,8 @@ function(Yt, X, Fixed=NULL, ccat=NULL, delta0=NULL, sigma0=NULL, zeta0=NULL, ome
         Z = Z[,apply(H1,1,sum)==0, drop=F]
         nh = nh[!names(nh)%in%Fixed]
     }
-    #Wfix = apply(Wfix,2,scale)
-    if(LF>0){X = Z[,H[,ncol(H)]==0]}else{X=Z}
+    
+    X=Z
     if(is.null(ccat)){ccat=rep(1,length(nh))}
     
     
@@ -77,23 +75,29 @@ function(Yt, X, Fixed=NULL, ccat=NULL, delta0=NULL, sigma0=NULL, zeta0=NULL, ome
     for(i in 1:length(nh)){ if(ccat[i]>2){ Cs=c(Cs,list(getC1(nh[i]))) }else{ Cs=c(Cs,list(diag(nh[i]))) } }
     
     # LINEAR
-    Data = list(NGPs=length(Ta0),Kernel=Kernel,W=Wfix,Z=Z,nh=nh,H0=H0,H1=H1,H2=H2,ccat=ccat,Bs=Bs,Cs=Cs,
+    if(Kernel=="Linear"){
+        Data = list(Kernel=Kernel,W=Wfix,Z=Z,nh=nh,H0=H0,H1=H1,H2=H2,ccat=ccat,Bs=Bs,Cs=Cs,
+        MatrixDims=list(J=nrow(Yt),N=ncol(Yt),M=Q0,Q=Q0,K1=ifelse(is.null(Wfix),0,ncol(Wfix)),K2=ncol(Z),L=ncol(H1),P=nrow(H2)))
+        Param = list(Xi=array(0,c(N,Q0)),Ta=NA)
+    }else{
+        Data = list(Kernel=Kernel,W=Wfix,Z=Z,nh=nh,H0=H0,H1=H1,H2=H2,ccat=ccat,Bs=Bs,Cs=Cs,
                 MatrixDims=list(J=nrow(Yt),N=ncol(Yt),M=unique(unlist(lapply(Ta0,nrow))),Q=unlist(lapply(Ta0,ncol)),K1=ifelse(is.null(Wfix),0,ncol(Wfix)),K2=ncol(Z),L=ncol(H1),P=nrow(H2)))
-                #Data$MatrixDims$M=3
-                #Data$MatrixDims$Q=1
-                #Data$MatrixDims$M=50
-                #Data$NGPs=1
-    Param = list(Xi=Xi0,Ta=Ta0)
+        Param = list(Xi=Xi0,Ta=Ta0)
     
-    Param = c(Param, list(UpdateKernelParams=rep(7,length(Ta0))))
+        Param = c(Param, list(UpdateKernelParams=rep(7,length(Ta0))))
+        
+        if(is.null(rho0)){  Param = c(Param, list(rho=rep(1,ncol(Ta)))) }else{ Param = c(Param, list(rho = rho0))   }
+        
+        PriorXi2=list(mu=array(0,c(Data$MatrixDims$N,Data$MatrixDims$Q[2])), var=array(1,c(Data$MatrixDims$N,Data$MatrixDims$Q[2])))
+        Param=c(Param, PriorXi2=list(PriorXi2))
+    }
+    
     
     if(!is.null(Fixed)){if(is.null(Alpha0)){Param = c(Param, list(Alpha=array(0,c(ncol(Wfix),nrow(Yt)))))}else{Param=c(Param,list(Alpha=Alpha0))}}else{ Param = c(Param, list(Alpha = array(0,c(0,Data$MatrixDims$J))))   }
     if(is.null(zeta0)){ Param = c(Param, list(zeta=rep(0,ncol(Z))))                  }else{ Param = c(Param, list(zeta = zeta0)) }
     
     if(is.null(theta0)){Param = c(Param, list(theta=1))                           }else{ Param = c(Param, list(theta=theta0)) }
     if(is.null(delta0)){Param = c(Param, list(delta = c(1., rep(.1,ncol(H0)-1))))   }else{ Param = c(Param, list(delta = delta0)) }
-    
-    if(is.null(rho0)){  Param = c(Param, list(rho=rep(1,ncol(Ta)))) }else{ Param = c(Param, list(rho = rho0))   }
     
     if(is.null(sigma0)){Param = c(Param, list(sigma2 = rowMeans(Yt^2) - rowMeans(Yt)^2)) }else{ Param = c(Param, list(sigma2 = sigma0)); if(sum(is.na(sigma0))>0){warning("NA in sigma");return()} }
     if(is.null(omega0)){Param = c(Param, list(omega2 = rep(1,ncol(Yt)))) }else{       Param = c(Param, list(omega2 = omega0)); if(sum(is.na(omega0))>0){warning("NA in omega");return()} }
@@ -117,8 +121,7 @@ function(Yt, X, Fixed=NULL, ccat=NULL, delta0=NULL, sigma0=NULL, zeta0=NULL, ome
     #load("PriorXi2.Rbin")
     #Param=c(Param, PriorXi2=list(PriorXi2))
     #print(c(Data$MatrixDims$N,Data$MatrixDims$Q[2]))
-    PriorXi2=list(mu=array(0,c(Data$MatrixDims$N,Data$MatrixDims$Q[2])), var=array(1,c(Data$MatrixDims$N,Data$MatrixDims$Q[2])))
-    Param=c(Param, PriorXi2=list(PriorXi2))
+    
     #print(names(Param))
     #print(dim(Param$PriorXi2$var))
     #print("Param1260 with PriorXi2")
@@ -128,7 +131,6 @@ function(Yt, X, Fixed=NULL, ccat=NULL, delta0=NULL, sigma0=NULL, zeta0=NULL, ome
     
     Param=c(Param, updateKernel(Data, Param))
     Param=c(Param, initDelta(Data, Param))
-        #,list(Psiinv = Param$Kinv/Param$theta + t(Param$KnmKinv/Param$omega2)%*%Param$KnmKinv))
     
     # random effect setting
     print(data.frame(names(nh),nh,ccat))
@@ -166,7 +168,7 @@ function(Yt, X, Fixed=NULL, ccat=NULL, delta0=NULL, sigma0=NULL, zeta0=NULL, ome
         cat(c(paste("[",itr,"]",sep=""),""),sep="\n");
         
         # intermediate parameter saving off
-        if(0){if(itr%%20==0){
+        if(Plot){if(itr%%20==0){
             save(Param,file=paste("Param",itr,".Rbin",sep=""))
             #png("pairs.png",width=2000,height=2000,res=150);pairs(rbind(Param$Xi,Param$Ta),col=rep(1:2,c(22188,50)));dev.off()
             #hoge=Param$Xi
@@ -174,16 +176,17 @@ function(Yt, X, Fixed=NULL, ccat=NULL, delta0=NULL, sigma0=NULL, zeta0=NULL, ome
         }}
         
         # Rho & Xi
-        Param[c("rho","Xi","Ta","ValRhoXi","GradRhoXi")] = updateRhoXi_LBFGS(Yt, YMat, Data, Param, F, Verbose=Verbose)
-        Param[c("K","Knm")] = updateKernel(Data,Param)
-        YMat[["YtOinvKnm"]] = as.matrix(Yt%*%(Param$Knm/Param$omega2))
-        tDinv = dbind(Param$Dinv,Param$K/rep(Param$theta,Data$MatrixDims$M))
-        tZ = cbind(Data$Z,Param$Knm)
-        Param[["Phiinv"]] = tDinv + t(tZ/Param$omega2)%*%tZ
-        #hist(Param$Xi[[1]]%%pi,breaks=100);abline(v=Param$Ta[[1]],col=2:4)
-        #plot(Param$Ta[[3]],xlim=c(0,17),ylim=c(0,25))
+        if(sum(Data$MatrixDims$Q)>0){
+            Param[c("rho","Xi","Ta","ValRhoXi","GradRhoXi")] = updateRhoXiTa(Yt, YMat, Data, Param, F, Verbose=Verbose)
+            Param[c("K","Knm")] = updateKernel(Data,Param)
+            YMat[["YtOinvKnm"]] = as.matrix(Yt%*%(Param$Knm/Param$omega2))
+            tDinv = dbind(Param$Dinv,Param$K/rep(Param$theta,Data$MatrixDims$M))
+            tZ = cbind(Data$Z,Param$Knm)
+            Param[["Phiinv"]] = tDinv + t(tZ/Param$omega2)%*%tZ
+            hist(Param$Xi[[1]]%%pi,breaks=100);abline(v=Param$Ta[[1]],col=2:4)
+            #plot(Param$Ta[[3]],xlim=c(0,17),ylim=c(0,25))
+        }
         
-        if(1){
         # Delta
         Param[c("zeta", "delta", "LD", "Delta", "Linv", "Dinv", "Phiinv", "theta", "ssdelta", "graddelta", "Hinvdelta")] = updateDelta(YMat, Data, Param, F, Verbose=Verbose)
         
@@ -194,33 +197,30 @@ function(Yt, X, Fixed=NULL, ccat=NULL, delta0=NULL, sigma0=NULL, zeta0=NULL, ome
         }
         
         # Omega
-        if(itr%%20==0){
+        #if(itr%%20==0){
             Param["omega2"]=updateOmega(Yt,YMat, Data, Param,F, Verbose=Verbose)
             YMat[c("YtOinvW","YtOinvZ","YtOinvKnm","Yt2Oinv1")] = updateYMatOmega(Yt, Data, Param)
             tDinv = dbind(Param$Dinv,Param$K/rep(Param$theta,Data$MatrixDims$M))
             tZ = cbind(Data$Z,Param$Knm)
             Param[["Phiinv"]] = tDinv + t(tZ/Param$omega2)%*%tZ
-        }
+            #}
         
         # Sigma
         Param["sigma2"]=updateSigma(YMat, Data, Param,F,Yt, Verbose=Verbose)
         YMat[c("ASinvYt","BSinvYt","USinvYt","OneSinvYt")] = updateYMatSigma(Yt, Data, Param)
-        }
-            
-            
-            
-            #plot(sigma0, Param$sigma2);abline(0,1)
-            #plot(omega0,Param$omega2);abline(0,1)
-            #hist(Param$omega2)
+        #plot(sigma0, Param$sigma2);abline(0,1)
+        #plot(omega0,Param$omega2);abline(0,1)
+        #hist(Param$omega2)
+        
         
         # Titsias lower bound
         tlb = updateTLB(YMat,Data,Param,F)
         cat("TLB=");print(tlb)
         if(is.na(tlb)){break}
         tlb.all=c(tlb.all,tlb)
-        #png("tlb.png",width=3000,height=1000,res=150);par(mfcol=c(1,3));plot(tlb.all);plot(rev(rev(tlb.all)[1:100]));plot(rev(rev(tlb.all)[1:20]));dev.off()
+        if(Plot){png("tlb.png",width=3000,height=1000,res=150);par(mfcol=c(1,3));plot(tlb.all);plot(rev(rev(tlb.all)[1:100]));plot(rev(rev(tlb.all)[1:20]));dev.off()}
     }
-    list(Data=Data,Param=Param)
+    list(Data=Data,Param=Param,tlb=tlb.all)
 }
 
 
