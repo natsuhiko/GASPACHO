@@ -8,11 +8,8 @@ Description: Mapping eQTLs in single cell resolutions
 Suggests:
 Collate:
     'GPLVM.R'
-    'GPMix.R'
     'Util.R'
     'getBF.R'
-    'getBF_local.R'
-    'getResid.R'
     'updateAlpha.R'
     'updateDelta.R'
     'updateKernel.R'
@@ -20,3 +17,4 @@ Collate:
     'updateRhoXi_LBFGS.R'
     'updateSigma.R'
     'updateTLB.R'
+    'de.R'

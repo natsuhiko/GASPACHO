@@ -647,4 +647,22 @@ Eigen = function(X, ndim=5){
 }
 
 
+reduceDimAll <-
+function(Ta){
+    Tall = cbind(Ta[[1]],Ta[[2]])
+    grp = cutree(hclust(dist(Tall)),h=2)
+    w = as.numeric(1/table(grp)[grp])
+    Tall = t(t(Tall)%*%(diag(length(unique(grp)))[grp,]*w))
+    Ta=list(Tall[,1,drop=F],Tall[,-1])
+    Ta
+}
 
+reduceDim1 <-
+function(Ta){
+    Tall = Ta;#cbind(Ta[[1]],Ta[[2]])
+    grp = cutree(hclust(dist(Tall)),h=2)
+    w = as.numeric(1/table(grp)[grp])
+    Tall = t(t(Tall)%*%(diag(length(unique(grp)))[grp,]*w))
+    Ta=Tall #Tall[,2:ncol(Tall),drop=F]
+    Ta
+    }

@@ -1,22 +1,6 @@
-reduceDimAll <-
-function(Ta){
-    Tall = cbind(Ta[[1]],Ta[[2]])
-    grp = cutree(hclust(dist(Tall)),h=2)
-    w = as.numeric(1/table(grp)[grp])
-    Tall = t(t(Tall)%*%(diag(length(unique(grp)))[grp,]*w))
-    Ta=list(Tall[,1,drop=F],Tall[,-1])
-    Ta
-}
 
-reduceDim1 <-
-    function(Ta){
-        Tall = Ta;#cbind(Ta[[1]],Ta[[2]])
-        grp = cutree(hclust(dist(Tall)),h=2)
-        w = as.numeric(1/table(grp)[grp])
-        Tall = t(t(Tall)%*%(diag(length(unique(grp)))[grp,]*w))
-        Ta=Tall #Tall[,2:ncol(Tall),drop=F]
-        Ta
-    }
+
+
 
 getSpatialDE = function(
 Yt,
@@ -204,12 +188,13 @@ LF=10
     Ks = updateKernelSE(gplvm$Param$Xi[[2]][,-c(1,3,5)],reduceDim1(gplvm$Param$Ta[[2]][,-c(1,3,5)]),gplvm$Param$rho[[2]][-c(1,3,5)]*rhoscale)
     #U = Ks$Knm
     U = t(Solve(Ks$K,t(Ks$Knm)))
-    Gk = apply(G, 2, scale)
+    Gs = apply(G, 2, scale)
+    Gk = Gs
     K2 = 1
     if(LF>0){
         K2 = ncol(U)+1
-        Gk = ( t(rep(1,NL))%x%cbind(U,1) )*( G%x%t(rep(1,K2)) ) # N x (K2 * NL)
-        Gk[,1:NL*K2] = apply(G, 2, scale)
+        Gk = ( t(rep(1,NL))%x%cbind(U,1) )*( Gs%x%t(rep(1,K2)) ) # N x (K2 * NL)
+        Gk[,1:NL*K2] = Gs
     }
     
     
@@ -232,7 +217,7 @@ LF=10
         Fk=cbind(Fk,c(t(ZtOinvGk[,((i-1)*K2+1):(i*K2)])%*%Solve(Phiinv,ZtOinvGk[,((i-1)*K2+1):(i*K2)])))
     }
     bfs=NULL
-    for(deltaG in c(0.01,0.1,1,10)){
+    for(deltaG in c(0.00001,0.0001,0.001,0.01,0.1,1,10,100)){
         if(LF>0){
             #DeltaG    = deltaG*dbind(theta*Solve(Ks$K),matrix(1,1))
             #DeltaGinv = dbind(Ks$K/theta,matrix(1,1)) / deltaG
@@ -254,14 +239,14 @@ LF=10
         s2new = (a-d-colSums(Hkinv*((ek-bk)%x%rep(1,K2))*(rep(1,K2)%x%(ek-bk))))/N
         
         # BF
-        #-N*log(s2nul)/2
         bfs = cbind(bfs,
             -N*log(s2new)/2 - apply(Hk, 2, function(Hk1){logDet(matrix(Hk1,K2))})/2 - logDet(DeltaG)/2 + N*log(s2nul)/2 +
-                sum(t(Ks$Knm/omega2)*Solve(Ks$K,t(Ks$Knm)))*theta*deltaG/2 - sum(1/omega2)*theta*deltaG/2
+                colSums(Gs^2*colSums(t(Ks$Knm/omega2)*Solve(Ks$K,t(Ks$Knm))))*theta*deltaG/2 - colSums(Gs^2/omega2)*theta*deltaG/2
             )
     }
-    mbfs=apply(bfs,1,max)
-    log(apply(exp(bfs-mbfs),1,mean,na.rm=T))+mbfs
+    #mbfs=apply(bfs,1,max)
+    #log(apply(exp(bfs-mbfs),1,mean,na.rm=T))+mbfs
+    bfs
 }
 
 
