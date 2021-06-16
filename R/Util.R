@@ -666,3 +666,26 @@ function(Ta){
     Ta=Tall #Tall[,2:ncol(Tall),drop=F]
     Ta
     }
+
+getCC <- function(cpm, gene, cc.genes){
+
+        # average S phase gene expression
+        sph = rowMeans(scale(t(as.matrix(cpm[gene[[6]]%in%cc.genes$s.genes,])),T,T))
+        # average G2/M phase gene expression
+        g2m = rowMeans(scale(t(as.matrix(cpm[gene[[6]]%in%cc.genes$g2m.genes,])),T,T))
+
+        # scaling
+        x = cbind(sph,g2m)/sqrt(sph^2+g2m^2)
+        # cell cycle
+        cc = asin(x[,2])
+        # negative domatin
+        cc[x[,1]<0]=pi-cc[x[,1]<0]
+        # mod 2pi
+        cc = (cc+pi)%%(2*pi)
+
+        cc
+}
+
+
+
+
