@@ -8,7 +8,7 @@ The example log normalised CPM (count per million) data is available [here](http
 	% R
 	> metadata = readRDS("Data/metadata.RDS")
 	> cpm = readRDS("Data/log_cpm_4999_22188.RDS")
-	> init_param = readRDS("init_param.RDS")
+	> init_param = readRDS("Data/init_param.RDS")
 	> gplvm=GPLVM(cpm, metadata,
 		Xi     = init_param$Xi, # latent variables
 		Ta     = init_param$Ta, # inducing variables
