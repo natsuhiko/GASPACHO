@@ -99,8 +99,7 @@ getTLBrho = function(Yt, YMat, Data, Param, Xi1, Ta1, rho1){
     tW = cbind(Data$W,Z%*%Param$zeta)
     tA = rbind(Param[["Alpha"]],1)
     Phiinv = tDinv+t(tZ/omega2)%*%tZ
-    
-    D = cbind(YMat$YtOinvZ,Yt%*%(newK$Knm/omega2))
+    D = cbind(YMat$YtOinvZ,as.matrix(Yt%*%(newK$Knm/omega2)))
     E = t(tZ/omega2)%*%tW
     G = (t(D)-E%*%tA)%*%(t(t(D)-E%*%tA)/sigma2)/J
     
