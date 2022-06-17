@@ -9,7 +9,7 @@ The example log normalised CPM (count per million) data is available [here](http
 	metadata = readRDS("Data/metadata.RDS")
 	cpm = readRDS("Data/log_cpm_4999_22188.RDS")
 	init_param = readRDS("Data/init_param.RDS")
-	gplvm=GPLVM(cpm, metadata,
+	gplvm = GPLVM(cpm, metadata,
 		Xi     = init_param$Xi, # latent variables
 		Ta     = init_param$Ta, # inducing variables
 		delta0 = init_param$delta, # variance parameters for metadata
@@ -22,4 +22,8 @@ The example log normalised CPM (count per million) data is available [here](http
 		ITRMAX = 1000)
 	
 	# Estimating the Donor by Context interaction effect
-	gplvm=updateDxCSE(cpm, gplvm)
+	gplvm = updateDxCSE(cpm, gplvm)
+	
+	# Computing eQTL Bayes factors
+	G = readRDS("Data/G_OAS1.RDS")
+	bfs = getBF(as.numeric(cpm[3329,]), gplvm, as.matrix(G[,10:77]), as.numeric(as.factor(metadata$donor)))
