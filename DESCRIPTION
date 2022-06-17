@@ -17,4 +17,5 @@ Collate:
     'updateRhoXi_LBFGS.R'
     'updateSigma.R'
     'updateTLB.R'
+    'updateDxCSE.R'
     'de.R'

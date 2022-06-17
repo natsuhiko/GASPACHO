@@ -1,3 +1,4 @@
 export(GPLVM)
 export(getTa)
-export(RunDE)
+export(getBF)
+export(updateDxCSE)
