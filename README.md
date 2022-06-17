@@ -22,8 +22,9 @@ The example log normalised CPM (count per million) data is available [here](http
 		ITRMAX = 1000)
 	
 	# Estimating the Donor by Context interaction effect
-	gplvm = updateDxCSE(cpm, gplvm)
+	gplvm = updateDxCSE(as.matrix(cpm), gplvm)
 	
 	# Computing eQTL Bayes factors
 	G = readRDS("Data/G_OAS1.RDS")
-	bfs = getBF(as.numeric(cpm[3329,]), gplvm, as.matrix(G[,10:77]), as.numeric(as.factor(metadata$donor)))
+	bfs = getBF(as.numeric(cpm[3329,]), gplvm, as.matrix(G[,10:77]), 
+	            as.numeric(as.factor(metadata$donor)))
