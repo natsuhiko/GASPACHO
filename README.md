@@ -20,7 +20,10 @@ The example log normalised CPM (count per million) data is available [here](http
 		rho0   = init_param$rho, # length parameters for Kernels
 		theta0 = init_param$theta, # variance parameter for GP
 		ITRMAX = 1000)
-	
+
+## Mapping dynamic eQTLs
+
+	% R
 	# Estimating the Donor by Context interaction effect
 	gplvm = updateDxCSE(as.matrix(cpm), gplvm)
 	
