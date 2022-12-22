@@ -22,13 +22,16 @@ The example log normalised CPM (count per million) data is available [here](http
 		ITRMAX = 1000)
 
 ## Mapping dynamic eQTLs
-In order to map eQTL, GASPACHO requires to set the variance parameter of donor x context interaction effect. It is available from the function `updateDxCSE` which returns the gplvm object with the estimate located at `gplvm$Param$d2dxc`. The function `getBF` then computes both the Bayes factors (BFs) and the Score based statistics for a given genotype dosage matrix (the third argument).  Note that, the column number of the genotype matrix has to be compatible with the donor ID provided by `did`. The example below computes the OAS1 eQTL BFs and Score statistics. The 3,329th row of the `cpm` matrix is the normalised OAS1 expression and `metadata$donor` indicates which cell belngs to the donor or origin.
+In order to map eQTL, GASPACHO requires to set the variance parameter of donor x context interaction effect. It is available from the function `updateDxCSE` which returns the gplvm object with the estimate located at `gplvm$Param$d2dxc`. The function `getBF` then computes both the Bayes factors (BFs) and the Score based statistics for a given genotype dosage matrix `G`.  Note that, the column number of the genotype matrix has to be compatible with the donor ID provided by `did`. The example below computes the OAS1 eQTL BFs and Score statistics. The 3,329th row of the `cpm` matrix is the normalised OAS1 expression and `metadata$donor` indicates which cell belngs to the donor or origin.
 
 	% R
 	# Estimating the Donor by Context interaction effect
 	gplvm = updateDxCSE(as.matrix(cpm), gplvm)
 	
 	# Computing eQTL Bayes factors
-	G = readRDS("Data/G_OAS1.RDS")
-	bfs = getBF(yj = as.numeric(cpm[3329,]), gplvm, G = as.matrix(G[,10:77]), 
+	G_OAS1 = readRDS("Data/G_OAS1.RDS")
+	# yj : expression vector for a target gene
+	# G  : genotype dosage matrix (locus x donor). Non-normalised (each value in [0,2])
+	# did: Donor ID compatible with the column of G
+	bfs = getBF(yj = as.numeric(cpm[3329,]), gplvm, G = as.matrix(G_OAS1[,10:77]), 
 	            did = as.numeric(as.factor(metadata$donor)))
