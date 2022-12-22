@@ -22,7 +22,7 @@ The example log normalised CPM (count per million) data is available [here](http
 		ITRMAX = 1000)
 
 ## Mapping dynamic eQTLs
-In order to map eQTL, GASPACHO requires to set the variance parameter of donor x context interaction effect. It is available from the function `updateDxCSE` which returns the gplvm object with the estimate located at `gplvm$Param$d2dxc`. The function `getBF` then computes both the Bayes factors (BFs) and the Score based statistics for a given genotype dosage matrix (the third argument). The example below computes the OAS1 eQTL BFs and Score statistics. The 3,329 row of the `cpm` matrix is the normalised OAS1 expression and `metadata$donor` indicates which cell belngs to the source donor.
+In order to map eQTL, GASPACHO requires to set the variance parameter of donor x context interaction effect. It is available from the function `updateDxCSE` which returns the gplvm object with the estimate located at `gplvm$Param$d2dxc`. The function `getBF` then computes both the Bayes factors (BFs) and the Score based statistics for a given genotype dosage matrix (the third argument). The example below computes the OAS1 eQTL BFs and Score statistics. The 3,329 row of the `cpm` matrix is the normalised OAS1 expression and `metadata$donor` indicates which cell belngs to the donor or origin.
 
 	% R
 	# Estimating the Donor by Context interaction effect
